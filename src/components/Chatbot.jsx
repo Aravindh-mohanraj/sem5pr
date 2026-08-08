@@ -14,10 +14,10 @@ import {
 import { qaKnowledgeBase, getTechnicalIndicators } from '../data/mockData';
 
 const PRESET_QUERIES = [
-  "Should I buy RELIANCE right now?",
+  "Should I buy TCS right now?",
+  "What is NVIDIA AI outlook?",
   "What is RSI and how does it help newbies?",
-  "How does Modern Portfolio Theory reduce risk?",
-  "Explain ESG score utility in stock picks."
+  "How does Modern Portfolio Theory reduce risk?"
 ];
 
 export default function Chatbot({ selectedStock }) {
@@ -26,7 +26,7 @@ export default function Chatbot({ selectedStock }) {
       id: 1,
       sender: 'bot',
       text: `Hello! I am your AI Financial Mentor. 🤖💰 
-      I can explain technical indicators, evaluate risk, analyze sentiment, and answer questions about TCS, Reliance, Infosys, Apple, or Tesla. 
+      I can explain technical indicators, evaluate risk, analyze sentiment, and answer questions about TCS, Reliance, Infosys, Apple, Nvidia, Microsoft, Tesla, or HDFC Bank. 
       Try asking a question or select a quick query below!`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
@@ -39,12 +39,10 @@ export default function Chatbot({ selectedStock }) {
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Setup Web Speech API (Speech Recognition)
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -80,11 +78,10 @@ export default function Chatbot({ selectedStock }) {
   const speakText = (text) => {
     if (!voiceEnabled) return;
     try {
-      // Strip markdown syntax for cleaner speech
       const cleanText = text.replace(/[*#`_\-]/g, '');
       const synth = window.speechSynthesis;
       if (synth) {
-        synth.cancel(); // Cancel any ongoing speech
+        synth.cancel();
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.rate = 1.0;
         synth.speak(utterance);
@@ -107,7 +104,6 @@ export default function Chatbot({ selectedStock }) {
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
 
-    // Generate response with artificial thinking delay
     setTimeout(() => {
       const responseText = generateBotResponse(textToSend.toLowerCase());
       
@@ -120,32 +116,33 @@ export default function Chatbot({ selectedStock }) {
 
       setMessages(prev => [...prev, botMsg]);
       speakText(responseText);
-    }, 800);
+    }, 600);
   };
 
   const generateBotResponse = (query) => {
-    // 1. Search preset knowledge base
     for (const item of qaKnowledgeBase) {
       if (item.keywords.some(k => query.includes(k))) {
         return item.response;
       }
     }
 
-    // 2. Dynamic stock status query
     if (query.includes('buy') || query.includes('should i') || query.includes('recommendation') || query.includes('predict')) {
       if (query.includes('tcs')) return getStockAdvice('TCS');
-      if (query.includes('reliance') || query.includes('reliance industries')) return getStockAdvice('RELIANCE');
+      if (query.includes('reliance')) return getStockAdvice('RELIANCE');
+      if (query.includes('nvidia') || query.includes('nvda')) return getStockAdvice('NVDA');
       if (query.includes('infosys') || query.includes('infy')) return getStockAdvice('INFY');
       if (query.includes('apple') || query.includes('aapl')) return getStockAdvice('AAPL');
+      if (query.includes('microsoft') || query.includes('msft')) return getStockAdvice('MSFT');
       if (query.includes('tesla') || query.includes('tsla')) return getStockAdvice('TSLA');
+      if (query.includes('hdfc')) return getStockAdvice('HDFCBANK');
+      return getStockAdvice(selectedStock.id);
     }
 
-    // 3. Fallback
-    return `Interesting question! As an AI Mentor, I suggest analyzing the stock's **RSI indicator** (if it's below 30, it is oversold) and checking its **News Sentiment**. 
+    return `As an AI Mentor, I suggest analyzing the stock's **RSI indicator** (if it's below 30, it is oversold) and checking its **News Sentiment**. 
     For specific insights, try asking:
     * *"Should I buy TCS?"*
-    * *"What is RSI?"* 
-    * *"Explain ESG score"*`;
+    * *"What is NVIDIA AI outlook?"*
+    * *"What is RSI?"*`;
   };
 
   const getStockAdvice = (stockId) => {
@@ -169,18 +166,18 @@ export default function Chatbot({ selectedStock }) {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-12rem)]">
+    <div className="flex gap-6 h-[calc(100vh-14rem)]">
       
       {/* Left Area: Chat Container */}
       <div className="flex-1 glass-panel rounded-2xl flex flex-col justify-between overflow-hidden">
         
         {/* Chat Header */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-2">
-            <Bot size={20} className="text-emerald-400" />
+            <Bot size={20} className="text-sky-600" />
             <div>
-              <h3 className="font-display font-bold text-sm text-slate-200">AI Financial Mentor</h3>
-              <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
+              <h3 className="font-display font-bold text-sm text-slate-900">AI Financial Mentor</h3>
+              <span className="text-[10px] text-sky-700 font-bold flex items-center gap-0.5">
                 <Sparkles size={8} /> Active Conversation
               </span>
             </div>
@@ -191,8 +188,8 @@ export default function Chatbot({ selectedStock }) {
               onClick={() => setVoiceEnabled(!voiceEnabled)}
               className={`p-2 rounded-lg border transition-colors ${
                 voiceEnabled 
-                  ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' 
-                  : 'border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'border-sky-300 bg-sky-50 text-sky-700' 
+                  : 'border-slate-200 text-slate-400 hover:text-slate-700'
               }`}
               title={voiceEnabled ? "Mute Voice Assistant Output" : "Unmute Voice Assistant Output"}
             >
@@ -202,21 +199,21 @@ export default function Chatbot({ selectedStock }) {
         </div>
 
         {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
           {messages.map(m => (
             <div key={m.id} className={`flex gap-3 max-w-[85%] ${m.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
               <div className={`h-8 w-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
-                m.sender === 'user' ? 'bg-indigo-600 text-slate-100' : 'bg-emerald-500 text-slate-950'
+                m.sender === 'user' ? 'bg-sky-600 text-white' : 'bg-slate-900 text-white'
               }`}>
                 {m.sender === 'user' ? <User size={14} /> : <Bot size={14} />}
               </div>
-              <div className={`p-4 rounded-2xl text-xs space-y-1.5 leading-relaxed font-sans ${
+              <div className={`p-4 rounded-2xl text-xs space-y-1.5 leading-relaxed font-medium ${
                 m.sender === 'user' 
-                  ? 'bg-indigo-600 text-slate-100 rounded-tr-none' 
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-300 rounded-tl-none whitespace-pre-line'
+                  ? 'bg-sky-600 text-white rounded-tr-none shadow-sm' 
+                  : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none whitespace-pre-line shadow-sm'
               }`}>
                 <p>{m.text}</p>
-                <span className="text-[9px] text-slate-400 block text-right font-mono">{m.time}</span>
+                <span className={`text-[9px] block text-right font-mono ${m.sender === 'user' ? 'text-sky-100' : 'text-slate-400'}`}>{m.time}</span>
               </div>
             </div>
           ))}
@@ -224,15 +221,14 @@ export default function Chatbot({ selectedStock }) {
         </div>
 
         {/* Message Input Bar */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/20 shrink-0 space-y-3">
+        <div className="p-4 border-t border-slate-200 bg-white shrink-0 space-y-3">
           
-          {/* Preset Buttons */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-slate-300 select-none">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-slate-700 select-none">
             {PRESET_QUERIES.map((q, idx) => (
               <button 
                 key={idx}
                 onClick={() => handleSendMessage(q)}
-                className="px-3 py-1.5 border border-slate-800 hover:border-slate-700 bg-slate-900/50 hover:bg-slate-900 rounded-lg text-[10px] font-semibold whitespace-nowrap shrink-0 transition-colors"
+                className="px-3 py-1.5 border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 rounded-lg text-[10px] font-bold whitespace-nowrap shrink-0 transition-colors text-slate-700"
               >
                 {q}
               </button>
@@ -245,8 +241,8 @@ export default function Chatbot({ selectedStock }) {
                 onClick={toggleRecording}
                 className={`p-3 rounded-xl border transition-all ${
                   isRecording 
-                    ? 'border-red-500 bg-red-500/10 text-red-500 animate-pulse' 
-                    : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                    ? 'border-rose-500 bg-rose-50 text-rose-600 animate-pulse' 
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900'
                 }`}
                 title={isRecording ? "Listening... Click to Stop" : "Start Voice Input Assistant"}
               >
@@ -260,13 +256,13 @@ export default function Chatbot({ selectedStock }) {
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputText)}
               placeholder={isRecording ? "Listening... Speak now!" : "Ask your financial mentor..."}
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-900 focus:outline-none focus:border-sky-500 font-medium"
               disabled={isRecording}
             />
 
             <button 
               onClick={() => handleSendMessage(inputText)}
-              className="p-3 bg-gradient-to-tr from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 rounded-xl shadow-lg shadow-emerald-500/10 glow-btn-green transition-all"
+              className="p-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl shadow-md shadow-sky-600/20 transition-all"
             >
               <Send size={18} />
             </button>
@@ -279,24 +275,24 @@ export default function Chatbot({ selectedStock }) {
       <div className="w-80 glass-panel rounded-2xl p-6 hidden xl:flex flex-col justify-between shrink-0">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <HelpCircle size={18} className="text-emerald-400" />
-            <h4 className="font-display font-bold text-sm text-slate-200">Mentor Handbook</h4>
+            <HelpCircle size={18} className="text-sky-600" />
+            <h4 className="font-display font-bold text-sm text-slate-900">Mentor Handbook</h4>
           </div>
           
-          <div className="space-y-3.5 text-xs text-slate-400 leading-relaxed font-sans">
-            <div className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl">
-              <span className="font-bold text-slate-200 block mb-1">Interactive Voice Assistant</span>
-              <p>Click the microphone icon to speak. The AI will convert your speech to text and reply with a spoken response!</p>
+          <div className="space-y-3.5 text-xs text-slate-600 leading-relaxed font-medium">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <span className="font-bold text-slate-900 block mb-1">Interactive Voice Assistant</span>
+              <p>Click the microphone icon to speak. The AI converts your voice to text and speaks responses aloud!</p>
             </div>
-            <div className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl">
-              <span className="font-bold text-slate-200 block mb-1">Context Awareness</span>
-              <p>The chatbot monitors the active stock. If you ask: *"Should I buy?"*, it will automatically compile the recommendation metrics for **{selectedStock.id}**.</p>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <span className="font-bold text-slate-900 block mb-1">Context Awareness</span>
+              <p>The chatbot monitors the active stock. If you ask: *"Should I buy?"*, it compiles metrics for **{selectedStock.id}**.</p>
             </div>
           </div>
         </div>
 
-        <div className="p-3 bg-slate-900/30 rounded-xl border border-slate-800 text-[10px] text-slate-500 leading-normal">
-          Disclaimer: Information provided is for learning and concept demonstration purposes. Always perform your own due diligence.
+        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[10px] text-slate-500 leading-normal">
+          Disclaimer: Information provided is for learning and demonstration purposes.
         </div>
       </div>
 

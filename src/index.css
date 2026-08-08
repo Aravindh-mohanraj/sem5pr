@@ -4,16 +4,15 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100;
+    @apply bg-slate-50 text-slate-900;
   }
 }
 
-/* Glassmorphism panel styling */
+/* Light Theme Card & Panel Styling */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
 .glass-panel-hover {
@@ -22,70 +21,51 @@
 
 .glass-panel-hover:hover {
   transform: translateY(-2px);
-  background: rgba(15, 23, 42, 0.8);
-  border-color: rgba(16, 185, 129, 0.2);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
 }
 
-/* Custom Scrollbars */
+/* Custom Scrollbars for Light Mode */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.4);
-}
-
-/* Glowing text and badges */
-.text-glow-green {
-  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-}
-
-.text-glow-red {
-  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-}
-
-.glow-btn-green:hover {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  background: #0284c7;
 }
 
 /* Animation utilities */
 @keyframes pulseGlow {
   0%, 100% {
     opacity: 0.6;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 10px rgba(2, 132, 199, 0.2);
   }
   50% {
     opacity: 1;
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 20px rgba(2, 132, 199, 0.4);
   }
 }
 
-.pulse-glow-green {
+.pulse-glow-blue {
   animation: pulseGlow 2s infinite;
 }
 
-/* Voice wave animations */
-.voice-wave-bar {
-  animation: bounceVoice 0.8s ease-in-out infinite alternate;
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-
-@keyframes bounceVoice {
-  10% { transform: scaleY(0.3); }
-  100% { transform: scaleY(1.2); }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-
-.voice-wave-bar:nth-child(2) { animation-delay: 0.15s; }
-.voice-wave-bar:nth-child(3) { animation-delay: 0.3s; }
-.voice-wave-bar:nth-child(4) { animation-delay: 0.45s; }
-.voice-wave-bar:nth-child(5) { animation-delay: 0.05s; }
