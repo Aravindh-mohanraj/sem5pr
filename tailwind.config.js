@@ -14,15 +14,15 @@ export default {
           700: '#374151',
         },
         brand: {
-          green: '#10B981', // emerald-500
-          red: '#EF4444',   // red-500
-          blue: '#3B82F6',  // blue-500
-          yellow: '#F59E0B', // amber-500
+          green: '#10B981',
+          red: '#EF4444',
+          blue: '#3B82F6',
+          yellow: '#F59E0B',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Outfit', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
