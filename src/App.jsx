@@ -1,27 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  TrendingUp, 
-  BookOpen, 
-  PieChart, 
-  MessageSquare, 
-  Bookmark, 
-  LayoutDashboard, 
-  Bell, 
-  User, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Sparkles,
-  Grid,
-  Search,
-  Shield,
-  Layers,
-  Zap,
-  Globe,
-  Settings,
-  UserCheck,
-  Activity,
-  Award,
-  Database
+  TrendingUp, BookOpen, PieChart, MessageSquare, LayoutDashboard, 
+  Bell, ArrowUpRight, ArrowDownRight, Grid, Settings, UserCircle,
+  Database, ChevronRight
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Watchlist from './components/Watchlist';
@@ -33,8 +14,19 @@ import UserProfile from './components/UserProfile';
 import SettingsPage from './components/SettingsPage';
 import { stocksList } from './data/mockData';
 
+const TABS = [
+  { id: 'showcase', label: 'Showcase', icon: Grid },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, showStock: true },
+  { id: 'watchlist', label: 'Watchlist & Alerts', icon: Bell },
+  { id: 'portfolio', label: 'Portfolio', icon: PieChart },
+  { id: 'chatbot', label: 'AI Chatbot', icon: MessageSquare },
+  { id: 'learning', label: 'Learn', icon: BookOpen },
+  { id: 'profile', label: 'Profile', icon: UserCircle },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
+
 function App() {
-  const [activeTab, setActiveTab] = useState('showcase'); // 'showcase', 'dashboard', 'watchlist', 'portfolio', 'chatbot', 'learning', 'profile', 'settings'
+  const [activeTab, setActiveTab] = useState('showcase');
   const [selectedStockId, setSelectedStockId] = useState('TCS');
   const [watchlist, setWatchlist] = useState(['TCS', 'AAPL', 'NVDA']);
   const [alerts, setAlerts] = useState([
@@ -45,452 +37,208 @@ function App() {
   const [triggeredAlerts, setTriggeredAlerts] = useState([]);
   const [stocks, setStocks] = useState(stocksList);
   const [dbConnected, setDbConnected] = useState(false);
-  const [nifty, setNifty] = useState({ price: 22450.40, change: 112.50, pct: 0.50 });
-  const [nasdaq, setNasdaq] = useState({ price: 16125.10, change: -45.80, pct: -0.28 });
+  const [nifty, setNifty] = useState({ price: 22450.40, pct: 0.50 });
+  const [nasdaq, setNasdaq] = useState({ price: 16125.10, pct: -0.28 });
 
-  // 1. Fetch live stock records from SQLite FastAPI Backend (http://127.0.0.1:8000/api/stocks)
   useEffect(() => {
-    const fetchDbStocks = async () => {
+    (async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/stocks');
-        if (response.ok) {
-          const dbData = await response.json();
-          if (Array.isArray(dbData) && dbData.length > 0) {
-            const mappedStocks = dbData.map(s => ({
-              id: s.id,
-              name: s.name,
-              ticker: s.ticker,
-              sector: s.sector,
-              price: s.price,
-              prevClose: s.prev_close,
-              volume: s.volume,
-              marketCap: s.market_cap,
-              esgScore: s.esg_score,
-              country: s.country,
-              popular: true,
-              aiSignal: s.ai_signal,
-              peRatio: s.pe_ratio,
-              eps: s.eps,
-              beta: s.beta,
-              divYield: s.div_yield,
-              high52w: s.high_52w,
-              low52w: s.low_52w,
-              targetPrice: s.target_price,
-              recommendationScore: s.recommendation_score
-            }));
-            setStocks(mappedStocks);
+        const res = await fetch('http://127.0.0.1:8000/api/stocks');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setStocks(data.map(s => ({
+              id: s.id, name: s.name, ticker: s.ticker, sector: s.sector,
+              price: s.price, prevClose: s.prev_close, volume: s.volume,
+              marketCap: s.market_cap, esgScore: s.esg_score, country: s.country,
+              popular: true, aiSignal: s.ai_signal, peRatio: s.pe_ratio,
+              eps: s.eps, beta: s.beta, divYield: s.div_yield,
+              high52w: s.high_52w, low52w: s.low_52w,
+              targetPrice: s.target_price, recommendationScore: s.recommendation_score
+            })));
             setDbConnected(true);
           }
         }
-      } catch (err) {
-        console.log('Using local dataset engine fallback');
-      }
-    };
-
-    fetchDbStocks();
+      } catch (_) {}
+    })();
   }, []);
 
-  // 2. Real-time stock price fluctuations simulation engine
   useEffect(() => {
     const interval = setInterval(() => {
-      setStocks(prevStocks => {
-        return prevStocks.map(stock => {
-          const changePercent = (Math.random() - 0.49) * 0.004;
-          const newPrice = Number((stock.price * (1 + changePercent)).toFixed(2));
-          const changeAmt = Number((newPrice - stock.prevClose).toFixed(2));
-          const changePct = Number(((changeAmt / stock.prevClose) * 100).toFixed(2));
-          
-          alerts.forEach(alert => {
-            if (alert.stockId === stock.id && alert.active) {
-              const condAbove = alert.type === 'above' && newPrice >= alert.threshold;
-              const condBelow = alert.type === 'below' && newPrice <= alert.threshold;
-              
-              if (condAbove || condBelow) {
-                triggerAlert(stock.id, newPrice, alert);
-              }
-            }
-          });
-
-          return {
-            ...stock,
-            price: newPrice,
-            change: changeAmt,
-            pct: changePct
-          };
+      setStocks(prev => prev.map(stock => {
+        const d = (Math.random() - 0.49) * 0.004;
+        const p = +(stock.price * (1 + d)).toFixed(2);
+        const c = +(p - stock.prevClose).toFixed(2);
+        const pct = +((c / stock.prevClose) * 100).toFixed(2);
+        alerts.forEach(a => {
+          if (a.stockId === stock.id && a.active) {
+            if ((a.type === 'above' && p >= a.threshold) || (a.type === 'below' && p <= a.threshold))
+              triggerAlert(stock.id, p, a);
+          }
         });
-      });
-
+        return { ...stock, price: p, change: c, pct };
+      }));
       setNifty(prev => {
-        const change = (Math.random() - 0.48) * 15;
-        const newPrice = Number((prev.price + change).toFixed(2));
-        const diff = Number((newPrice - 22337.90).toFixed(2));
-        return { price: newPrice, change: diff, pct: Number(((diff / 22337.90) * 100).toFixed(2)) };
+        const p = +(prev.price + (Math.random() - 0.48) * 15).toFixed(2);
+        return { price: p, pct: +(((p - 22337.9) / 22337.9) * 100).toFixed(2) };
       });
-
       setNasdaq(prev => {
-        const change = (Math.random() - 0.52) * 20;
-        const newPrice = Number((prev.price + change).toFixed(2));
-        const diff = Number((newPrice - 16170.90).toFixed(2));
-        return { price: newPrice, change: diff, pct: Number(((diff / 16170.90) * 100).toFixed(2)) };
+        const p = +(prev.price + (Math.random() - 0.52) * 20).toFixed(2);
+        return { price: p, pct: +(((p - 16170.9) / 16170.9) * 100).toFixed(2) };
       });
-
     }, 3000);
-
     return () => clearInterval(interval);
   }, [alerts]);
 
   const triggerAlert = (stockId, price, alert) => {
     setAlerts(prev => prev.map(a => a.id === alert.id ? { ...a, active: false } : a));
-    
-    const timeStr = new Date().toLocaleTimeString();
-    const newTrigger = {
-      id: Date.now(),
-      stockId,
-      price,
-      threshold: alert.threshold,
-      type: alert.type,
-      time: timeStr
-    };
-    
-    setTriggeredAlerts(prev => [newTrigger, ...prev]);
-    
+    setTriggeredAlerts(prev => [{ id: Date.now(), stockId, price, threshold: alert.threshold, type: alert.type, time: new Date().toLocaleTimeString() }, ...prev]);
     try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.35);
-    } catch (e) {
-      console.log('Audio Context blocked or not supported');
-    }
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      g.gain.setValueAtTime(0.12, ctx.currentTime);
+      osc.start(); osc.stop(ctx.currentTime + 0.3);
+    } catch (_) {}
   };
 
   const currentStock = stocks.find(s => s.id === selectedStockId) || stocks[0];
+  const toggleWatchlist = id => setWatchlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const addAlert = a => setAlerts(prev => [...prev, { ...a, id: Date.now(), active: true }]);
 
-  const handleToggleWatchlist = (stockId) => {
-    if (watchlist.includes(stockId)) {
-      setWatchlist(prev => prev.filter(id => id !== stockId));
-    } else {
-      setWatchlist(prev => [...prev, stockId]);
-    }
-  };
-
-  const handleAddAlert = (alert) => {
-    setAlerts(prev => [...prev, { ...alert, id: Date.now(), active: true }]);
-  };
+  const IndexPill = ({ label, price, pct }) => (
+    <div className="flex items-center gap-2">
+      <span className="text-gray-400 font-medium text-[13px]">{label}</span>
+      <span className="font-mono font-semibold text-gray-800 text-[13px]">{price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+      <span className={`flex items-center gap-0.5 font-mono font-semibold text-[13px] ${pct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+        {pct >= 0 ? <ArrowUpRight size={14} strokeWidth={2.5} /> : <ArrowDownRight size={14} strokeWidth={2.5} />}
+        {pct >= 0 ? '+' : ''}{pct}%
+      </span>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col selection:bg-sky-500/20 selection:text-sky-800 antialiased">
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
       
-      {/* 1. TOP INSTITUTIONAL TICKER BAR */}
-      <header className="bg-white border-b border-slate-200/80 px-4 lg:px-8 py-2.5 flex items-center justify-between text-xs shrink-0 shadow-2xs">
-        
-        {/* Brand & Market Status */}
-        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar py-0.5">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white font-black shadow-md shadow-sky-600/25">
-              <TrendingUp size={20} />
+      {/* ─── TOP BAR ─── */}
+      <header className="bg-white border-b border-gray-200 px-6 lg:px-8 h-14 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-8 overflow-x-auto no-scrollbar">
+          {/* Brand */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
+              <TrendingUp size={18} strokeWidth={2.5} />
             </div>
-            <div>
-              <span className="font-display font-extrabold text-base text-slate-900 tracking-tight block leading-none">AI Stock Analyzer</span>
-              <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5 tracking-wider">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> MARKET LIVE • {dbConnected ? 'SQLITE DB CONNECTED' : 'REAL-TIME SIMULATION'}
+            <div className="leading-none">
+              <span className="font-semibold text-[15px] text-gray-900 block">AI Stock Analyzer</span>
+              <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                {dbConnected ? 'SQLite Connected' : 'Live Simulation'}
               </span>
             </div>
           </div>
 
-          <div className="h-5 w-px bg-slate-200/80"></div>
+          <div className="h-5 w-px bg-gray-200 shrink-0"></div>
 
-          {/* NIFTY 50 */}
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-500 tracking-wider">NIFTY 50</span>
-            <span className="font-mono font-bold text-slate-900">{nifty.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-            <span className={`flex items-center font-mono font-bold ${nifty.change >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              {nifty.change >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-              {nifty.change >= 0 ? '+' : ''}{nifty.pct}%
-            </span>
-          </div>
+          {/* Market Indices */}
+          <IndexPill label="NIFTY 50" price={nifty.price} pct={nifty.pct} />
+          <IndexPill label="NASDAQ" price={nasdaq.price} pct={nasdaq.pct} />
 
-          {/* NASDAQ */}
-          <div className="flex items-center gap-2 border-l border-slate-200/80 pl-4">
-            <span className="font-semibold text-slate-500 tracking-wider">NASDAQ</span>
-            <span className="font-mono font-bold text-slate-900">{nasdaq.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-            <span className={`flex items-center font-mono font-bold ${nasdaq.change >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              {nasdaq.change >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-              {nasdaq.change >= 0 ? '+' : ''}{nasdaq.pct}%
-            </span>
-          </div>
-
-          {/* Live Ticker Switcher */}
-          <div className="hidden xl:flex items-center gap-2 border-l border-slate-200/80 pl-4 select-none">
-            {stocks.slice(0, 6).map(s => (
+          {/* Quick Ticker Strip */}
+          <div className="hidden xl:flex items-center gap-1.5 pl-4 border-l border-gray-200">
+            {stocks.slice(0, 5).map(s => (
               <button 
                 key={s.id}
-                onClick={() => {
-                  setSelectedStockId(s.id);
-                  setActiveTab('dashboard');
-                }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border transition-all ${
+                onClick={() => { setSelectedStockId(s.id); setActiveTab('dashboard'); }}
+                className={`px-2.5 py-1 rounded-md text-[12px] font-medium border transition-colors ${
                   s.id === selectedStockId 
-                    ? 'border-sky-500 bg-sky-50/80 text-sky-700 font-bold shadow-2xs' 
-                    : 'border-slate-200/80 hover:border-slate-300 bg-slate-50 text-slate-600'
+                    ? 'border-blue-200 bg-blue-50 text-blue-700' 
+                    : 'border-gray-200 text-gray-500 hover:bg-gray-50'
                 }`}
               >
-                <span>{s.id}</span>
-                <span className="font-mono font-bold">{s.country === 'US' ? '$' : '₹'}{s.price.toFixed(1)}</span>
+                <span className="font-semibold">{s.id}</span>{' '}
+                <span className="font-mono">{s.country === 'US' ? '$' : '₹'}{s.price.toFixed(0)}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* User Profile Trigger & Notifications */}
-        <div className="flex items-center gap-3">
+        {/* Right: Alerts + User */}
+        <div className="flex items-center gap-3 shrink-0">
           {triggeredAlerts.length > 0 && (
-            <button 
-              onClick={() => setActiveTab('watchlist')}
-              className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 border border-rose-200/80 rounded-full font-semibold text-xs animate-pulse"
-            >
-              <Bell size={13} />
-              <span>{triggeredAlerts.length} Alert Triggered</span>
+            <button onClick={() => setActiveTab('watchlist')} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-full text-[12px] font-semibold">
+              <Bell size={13} /> {triggeredAlerts.length} Alert{triggeredAlerts.length > 1 ? 's' : ''}
             </button>
           )}
-
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className="flex items-center gap-2 pl-3 border-l border-slate-200/80 hover:text-sky-600 transition-colors"
-          >
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-sky-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-              JD
-            </div>
-            <div className="hidden sm:block text-left">
-              <span className="text-xs font-bold text-slate-900 block leading-tight">Jai D.</span>
-              <span className="text-[9px] text-sky-700 font-extrabold uppercase tracking-wider block">Pro Investor</span>
+          <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 pl-3 border-l border-gray-200">
+            <div className="h-8 w-8 rounded-full bg-blue-600 text-white text-[12px] font-bold flex items-center justify-center">JD</div>
+            <div className="hidden sm:block">
+              <span className="text-[13px] font-semibold text-gray-900 block leading-tight">Jai D.</span>
+              <span className="text-[10px] text-gray-500 font-medium">Pro Investor</span>
             </div>
           </button>
         </div>
-
       </header>
 
-      {/* 2. HIGH-END HERO BANNER */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 text-white px-6 lg:px-12 py-11 shadow-lg relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute left-1/4 -bottom-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto space-y-4 relative z-10">
-          <div className="text-center space-y-2">
-            <h1 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl tracking-tight drop-shadow-sm text-white">
-              Stock Intelligence Showcase
-            </h1>
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed opacity-95">
-              Institutional AI stock analysis platform leveraging FinBERT sentiment transformer, 14-Day RSI indicators, and Modern Portfolio Theory optimization.
-            </p>
-          </div>
-
-          {/* Quick Institutional Stats Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto pt-2 text-center text-xs">
-            <div className="p-2.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">AI Stock Datasets</span>
-              <span className="font-mono font-extrabold text-white text-base">{stocks.length} Assets</span>
-            </div>
-            <div className="p-2.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Database Storage</span>
-              <span className="font-mono font-extrabold text-white text-base flex items-center justify-center gap-1">
-                <Database size={14} className="text-sky-400" /> {dbConnected ? 'SQLite Live' : 'Active'}
-              </span>
-            </div>
-            <div className="p-2.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">FinBERT Accuracy</span>
-              <span className="font-mono font-extrabold text-emerald-400 text-base">98.4% Confidence</span>
-            </div>
-            <div className="p-2.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Engine Latency</span>
-              <span className="font-mono font-extrabold text-sky-400 text-base">3000ms Real-Time</span>
-            </div>
+      {/* ─── HERO BANNER ─── */}
+      <div className="bg-gray-900 text-white px-6 lg:px-8 py-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-transparent to-indigo-900/30 pointer-events-none"></div>
+        <div className="max-w-6xl mx-auto relative z-10 text-center space-y-3">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Stock Intelligence Platform</h1>
+          <p className="text-gray-400 text-base max-w-xl mx-auto leading-relaxed">
+            Real-time market analytics powered by FinBERT sentiment analysis, technical indicators, and Modern Portfolio Theory.
+          </p>
+          <div className="flex items-center justify-center gap-6 pt-3 text-[13px] text-gray-400">
+            <span className="flex items-center gap-1.5"><Database size={14} className="text-blue-400" /> {stocks.length} Assets Tracked</span>
+            <span>•</span>
+            <span>98.4% FinBERT Accuracy</span>
+            <span>•</span>
+            <span>3s Real-Time Updates</span>
           </div>
         </div>
       </div>
 
-      {/* 3. NAVIGATION TAB BAR */}
-      <div className="bg-white border-b border-slate-200/80 px-4 lg:px-12 sticky top-0 z-30 shadow-2xs">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
-          
-          <button 
-            onClick={() => setActiveTab('showcase')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'showcase' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <Grid size={15} />
-            <span>Directory Showcase</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'dashboard' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <LayoutDashboard size={15} />
-            <span>Market Dashboard ({selectedStockId})</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('watchlist')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'watchlist' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <Bell size={15} />
-            <span>Alerts & Watchlist ({watchlist.length})</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('portfolio')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'portfolio' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <PieChart size={15} />
-            <span>Portfolio Optimizer</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('chatbot')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'chatbot' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <MessageSquare size={15} />
-            <span>AI Chatbot Mentor</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('learning')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'learning' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <BookOpen size={15} />
-            <span>Learning Center</span>
-          </button>
-
-          <div className="h-4 w-px bg-slate-200 mx-1"></div>
-
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'profile' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <UserCheck size={15} />
-            <span>User Profile</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap ${
-              activeTab === 'settings' 
-                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
-          >
-            <Settings size={15} />
-            <span>Settings</span>
-          </button>
-
+      {/* ─── NAVIGATION ─── */}
+      <nav className="bg-white border-b border-gray-200 px-6 lg:px-8 sticky top-0 z-30 shadow-nav">
+        <div className="max-w-6xl mx-auto flex items-center gap-1 overflow-x-auto no-scrollbar py-2">
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors ${
+                  isActive 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Icon size={15} strokeWidth={isActive ? 2.5 : 2} />
+                <span>{tab.label}{tab.showStock ? ` (${selectedStockId})` : ''}</span>
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </nav>
 
-      {/* 4. MAIN VIEW CONTAINER */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        
-        {activeTab === 'showcase' && (
-          <StockShowcase 
-            stocks={stocks}
-            onSelectStock={setSelectedStockId}
-            watchlist={watchlist}
-            onToggleWatchlist={handleToggleWatchlist}
-            onNavigateTab={setActiveTab}
-          />
-        )}
-
-        {activeTab === 'dashboard' && (
-          <Dashboard 
-            stock={currentStock} 
-            stocksList={stocks} 
-            onSelectStock={setSelectedStockId} 
-            watchlist={watchlist}
-            onToggleWatchlist={handleToggleWatchlist}
-          />
-        )}
-
-        {activeTab === 'watchlist' && (
-          <Watchlist 
-            stocks={stocks} 
-            watchlist={watchlist} 
-            onToggleWatchlist={handleToggleWatchlist}
-            alerts={alerts}
-            onAddAlert={handleAddAlert}
-            onSelectStock={(id) => { setSelectedStockId(id); setActiveTab('dashboard'); }}
-          />
-        )}
-
-        {activeTab === 'portfolio' && (
-          <PortfolioOptimizer 
-            stocks={stocks}
-          />
-        )}
-
-        {activeTab === 'chatbot' && (
-          <Chatbot 
-            selectedStock={currentStock}
-          />
-        )}
-
-        {activeTab === 'learning' && (
-          <LearningCenter />
-        )}
-
-        {activeTab === 'profile' && (
-          <UserProfile 
-            watchlist={watchlist}
-            alerts={alerts}
-          />
-        )}
-
-        {activeTab === 'settings' && (
-          <SettingsPage />
-        )}
-
+      {/* ─── CONTENT ─── */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-6 lg:px-8 py-6">
+        {activeTab === 'showcase' && <StockShowcase stocks={stocks} onSelectStock={setSelectedStockId} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} onNavigateTab={setActiveTab} />}
+        {activeTab === 'dashboard' && <Dashboard stock={currentStock} stocksList={stocks} onSelectStock={setSelectedStockId} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />}
+        {activeTab === 'watchlist' && <Watchlist stocks={stocks} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} alerts={alerts} onAddAlert={addAlert} onSelectStock={id => { setSelectedStockId(id); setActiveTab('dashboard'); }} />}
+        {activeTab === 'portfolio' && <PortfolioOptimizer stocks={stocks} />}
+        {activeTab === 'chatbot' && <Chatbot selectedStock={currentStock} />}
+        {activeTab === 'learning' && <LearningCenter />}
+        {activeTab === 'profile' && <UserProfile watchlist={watchlist} alerts={alerts} />}
+        {activeTab === 'settings' && <SettingsPage />}
       </main>
 
-      {/* 5. FOOTER */}
-      <footer className="bg-white border-t border-slate-200/80 py-6 px-6 text-center text-xs text-slate-500 space-y-1.5 mt-auto">
-        <p className="font-bold text-slate-800">AI Stock Analyzer • Institutional Financial Intelligence Terminal</p>
-        <p className="text-[11px] text-slate-500 max-w-2xl mx-auto">
-          FastAPI SQLite Backend • React & Tailwind CSS • Recharts & Web Speech API
-        </p>
+      {/* ─── FOOTER ─── */}
+      <footer className="bg-white border-t border-gray-200 py-5 px-6 text-center space-y-1">
+        <p className="text-[13px] font-semibold text-gray-700">AI Stock Analyzer — Financial Intelligence Platform</p>
+        <p className="text-[11px] text-gray-400">React • Tailwind CSS • FastAPI • SQLite • Recharts • Web Speech API</p>
       </footer>
-
     </div>
   );
 }
