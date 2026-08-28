@@ -171,9 +171,9 @@ function App() {
             </button>
           )}
           <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 pl-3 border-l border-gray-200">
-            <div className="h-8 w-8 rounded-full bg-blue-600 text-white text-[12px] font-bold flex items-center justify-center">JD</div>
+            <div className="h-8 w-8 rounded-full bg-blue-600 text-white text-[12px] font-bold flex items-center justify-center shadow-sm">AM</div>
             <div className="hidden sm:block">
-              <span className="text-[13px] font-semibold text-gray-900 block leading-tight">Jai D.</span>
+              <span className="text-[13px] font-semibold text-gray-900 block leading-tight">Aravindh M.</span>
               <span className="text-[10px] text-gray-500 font-medium">Pro Investor</span>
             </div>
           </button>

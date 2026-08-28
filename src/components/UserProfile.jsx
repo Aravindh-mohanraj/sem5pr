@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Mail, 
@@ -19,19 +19,41 @@ import {
 
 export default function UserProfile({ watchlist, alerts }) {
   const [profile, setProfile] = useState({
-    name: 'Jai D.',
-    email: 'jai.investor@example.com',
+    name: 'Aravindh Mohanraj',
+    email: 'aravindh.mohanraj@gmail.com',
     tier: 'Pro Investor Tier',
     joined: 'August 2024',
     strategy: 'Balanced Growth',
     goal: 'Wealth Accumulation & Tech Stock Analytics',
-    bio: 'Passionate retail investor leveraging explainable AI models and Modern Portfolio Theory to optimize portfolio risk.',
+    bio: 'Passionate Indian retail investor leveraging AI-driven quantitative models and Modern Portfolio Theory to optimize risk and returns across Indian and Global equities.',
     riskTolerance: 'Moderate'
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ ...profile });
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/api/users')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.name) {
+          const userObj = {
+            name: data.name,
+            email: data.email,
+            tier: data.tier,
+            joined: data.joined,
+            strategy: data.strategy,
+            goal: data.goal,
+            bio: data.bio,
+            riskTolerance: data.risk_tolerance || 'Moderate'
+          };
+          setProfile(userObj);
+          setEditForm(userObj);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
