@@ -22,7 +22,12 @@ import {
   Users,
   Compass,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Target,
+  BarChart3,
+  Award,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { 
   stockHistories, 
@@ -33,7 +38,8 @@ import {
 } from '../data/mockData';
 
 export default function Dashboard({ stock, stocksList, onSelectStock, watchlist, onToggleWatchlist }) {
-  const [chartMode, setChartMode] = useState('price');
+  const [chartMode, setChartMode] = useState('price'); // 'price' or 'volume'
+  const [timeframe, setTimeframe] = useState('1M'); // '1D', '1W', '1M', '3M'
   const indicators = getTechnicalIndicators(stock.id);
   const news = newsSentiment[stock.id] || [];
   const esg = esgBreakdown[stock.id] || { environmental: 50, social: 50, governance: 50, overall: 50, level: 'N/A', grade: 'B' };
@@ -51,38 +57,35 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
     
     let recommendation = 'HOLD';
     let colorClass = 'text-amber-700 bg-amber-50 border-amber-200';
-    let ratingScore = 52;
+    let ratingScore = stock.recommendationScore || 55;
     let explanation = [];
 
     if (rsi < 35 && avgSentiment > 55) {
       recommendation = 'BUY';
       colorClass = 'text-emerald-700 bg-emerald-50 border-emerald-200';
-      ratingScore = 84;
       explanation = [
-        `RSI = ${rsi} indicates the stock is technically oversold, presenting an attractive entry point.`,
-        `News Sentiment is ${avgSentiment}% positive, showing solid public confidence.`,
-        `Our LSTM models predict a 7-day rebound of +${predictions.days7ChangePct}% to ₹${predictions.days7.toFixed(2)}.`,
-        `Insider transactions indicate institutional backing (${holdings.institutional}% shares) is holding firm.`
+        `RSI = ${rsi} indicates technical oversold condition, offering strategic risk-adjusted entry point.`,
+        `FinBERT News Sentiment is ${avgSentiment}% positive across institutional channels.`,
+        `LSTM Short-Term model predicts +${predictions.days7ChangePct}% upside target to ₹${predictions.days7.toFixed(2)}.`,
+        `Institutional holdings (${holdings.institutional}% shares) remain firm with zero promoter liquidation.`
       ];
     } else if (rsi > 70 || (avgSentiment < 40 && change < -2)) {
       recommendation = 'SELL';
       colorClass = 'text-rose-700 bg-rose-50 border-rose-200';
-      ratingScore = 22;
       explanation = [
-        `RSI = ${rsi} shows heavily overbought conditions, increasing downside risk.`,
-        `Negative news sentiment at ${avgSentiment}% suggests short-term macro headwinds.`,
-        `Our LSTM model forecasts a decline of ${predictions.days7ChangePct}% over the next 7 days.`,
-        `Insiders/Institutions are showing net selling patterns this quarter.`
+        `RSI = ${rsi} signals overbought conditions with high probability of technical pullback.`,
+        `Macro sentiment is cooling at ${avgSentiment}% weighted score.`,
+        `LSTM short-term model forecasts potential downside of ${predictions.days7ChangePct}% over 7 days.`,
+        `Institutional distribution patterns observed in recent quarterly reporting.`
       ];
     } else {
       recommendation = 'HOLD';
       colorClass = 'text-amber-700 bg-amber-50 border-amber-200';
-      ratingScore = 55;
       explanation = [
-        `RSI is moderate at ${rsi}, showing balanced buying and selling pressure.`,
-        `News flow is neutral to slightly positive (${avgSentiment}% sentiment score).`,
-        `Short-term 7-day movement is predicted to remain stable (${change >= 0 ? '+' : ''}${change}%).`,
-        `Promoter and institutional structures remain unchanged.`
+        `RSI is balanced at ${rsi}, showing equilibrium between supply and demand.`,
+        `News flow sentiment is stable (${avgSentiment}% confidence score).`,
+        `Short-term 7-day target indicates rangebound consolidation (${change >= 0 ? '+' : ''}${change}%).`,
+        `Promoter and institutional structures remain constant.`
       ];
     }
 
@@ -96,98 +99,161 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
 
   const chartGradientColor = isUp ? '#059669' : '#e11d48';
 
+  // 52W High Low percentage position
+  const range52wPercent = stock.high52w && stock.low52w 
+    ? Math.min(100, Math.max(0, ((stock.price - stock.low52w) / (stock.high52w - stock.low52w)) * 100))
+    : 50;
+
   return (
     <div className="space-y-6">
       
-      {/* Stock Selection & Main Header Info */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 glass-panel rounded-2xl">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-sky-50 rounded-xl border border-sky-200">
-            <span className="font-display font-black text-2xl text-sky-700 tracking-wider">
-              {stock.id}
-            </span>
-          </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="font-display text-2xl font-bold text-slate-900">{stock.name}</h2>
-              <button 
-                onClick={() => onToggleWatchlist(stock.id)}
-                className={`p-1.5 rounded-lg border transition-all ${
-                  watchlist.includes(stock.id)
-                    ? 'border-amber-400 bg-amber-50 text-amber-700'
-                    : 'border-slate-200 hover:border-slate-300 text-slate-400 hover:text-slate-700'
-                }`}
-              >
-                {watchlist.includes(stock.id) ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-              </button>
+      {/* 1. Header Card: Asset Overview & Financial Fundamentals Bar */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-5">
+        
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="p-3.5 bg-sky-50 rounded-2xl border border-sky-200 shrink-0">
+              <span className="font-display font-black text-2xl text-sky-700 tracking-wider">
+                {stock.id}
+              </span>
             </div>
-            <p className="text-sm text-slate-500 font-medium mt-0.5">{stock.sector} • {stock.ticker}</p>
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="font-display text-2xl font-bold text-slate-900">{stock.name}</h2>
+                <button 
+                  onClick={() => onToggleWatchlist(stock.id)}
+                  className={`p-1.5 rounded-lg border transition-all ${
+                    watchlist.includes(stock.id)
+                      ? 'border-amber-400 bg-amber-50 text-amber-700'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  {watchlist.includes(stock.id) ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                </button>
+              </div>
+              <p className="text-sm text-slate-500 font-medium mt-0.5">{stock.sector} • Ticker: <span className="font-mono text-slate-700">{stock.ticker}</span></p>
+            </div>
+          </div>
+
+          <div className="flex items-end gap-6 self-start lg:self-auto">
+            <div className="text-right">
+              <div className="text-3xl font-mono font-extrabold text-slate-900">
+                {stock.country === 'US' ? '$' : '₹'}{stock.price.toLocaleString(stock.country === 'US' ? 'en-US' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <div className={`flex items-center justify-end font-mono text-sm mt-0.5 font-bold ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {isUp ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                <span>{isUp ? '+' : ''}{priceDiff.toFixed(2)} ({isUp ? '+' : ''}{changePct}%)</span>
+              </div>
+            </div>
+            
+            <div className="border-l border-slate-200 pl-6 hidden sm:block">
+              <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Market Cap</span>
+              <span className="text-sm font-bold text-slate-900 mt-1 block">{stock.marketCap}</span>
+            </div>
+            <div className="border-l border-slate-200 pl-6 hidden sm:block">
+              <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Target Price</span>
+              <span className="text-sm font-bold text-sky-700 mt-1 block font-mono">
+                {stock.country === 'US' ? '$' : '₹'}{stock.targetPrice || (stock.price * 1.1).toFixed(0)}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-end gap-6">
-          <div className="text-right">
-            <div className="text-3xl font-mono font-extrabold text-slate-900">
-              {stock.country === 'US' ? '$' : '₹'}{stock.price.toLocaleString(stock.country === 'US' ? 'en-US' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className={`flex items-center justify-end font-mono text-sm mt-0.5 font-bold ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
-              {isUp ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-              <span>{isUp ? '+' : ''}{priceDiff.toFixed(2)} ({isUp ? '+' : ''}{changePct}%)</span>
-            </div>
+        {/* Fundamental Metrics Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 pt-4 border-t border-slate-100 text-xs">
+          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">P/E Ratio</span>
+            <span className="font-mono font-extrabold text-slate-800 text-sm">{stock.peRatio || 25.4}x</span>
           </div>
-          
-          <div className="border-l border-slate-200 pl-6 hidden sm:block">
-            <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Market Cap</span>
-            <span className="text-sm font-bold text-slate-800 mt-1 block">{stock.marketCap}</span>
+
+          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">EPS (TTM)</span>
+            <span className="font-mono font-extrabold text-slate-800 text-sm">{stock.eps ? `${stock.country === 'US' ? '$' : '₹'}${stock.eps}` : 'N/A'}</span>
           </div>
-          <div className="border-l border-slate-200 pl-6 hidden sm:block">
-            <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Volume</span>
-            <span className="text-sm font-bold text-slate-800 mt-1 block font-mono">{(stock.volume / 100000).toFixed(1)}L</span>
+
+          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">Beta (Volatility)</span>
+            <span className="font-mono font-extrabold text-slate-800 text-sm">{stock.beta || 1.0}</span>
+          </div>
+
+          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase">Dividend Yield</span>
+            <span className="font-mono font-extrabold text-slate-800 text-sm">{stock.divYield || '0.00%'}</span>
+          </div>
+
+          {/* 52W High Low Range Bar */}
+          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 col-span-2 space-y-1">
+            <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+              <span>52W Low: {stock.country === 'US' ? '$' : '₹'}{stock.low52w || (stock.price * 0.8).toFixed(0)}</span>
+              <span>52W High: {stock.country === 'US' ? '$' : '₹'}{stock.high52w || (stock.price * 1.2).toFixed(0)}</span>
+            </div>
+            <div className="relative h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+              <div className="h-full bg-sky-600 rounded-full transition-all" style={{ width: `${range52wPercent}%` }}></div>
+            </div>
           </div>
         </div>
+
       </div>
 
-      {/* Grid: Charts + AI Recommendations */}
+      {/* 2. Grid: Charts + Explainable AI Recommendations */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
         {/* Left 2 Columns: Chart View */}
-        <div className="xl:col-span-2 glass-panel rounded-2xl p-6 flex flex-col justify-between min-h-[420px]">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setChartMode('price')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                  chartMode === 'price'
-                    ? 'bg-sky-600 border-sky-600 text-white shadow-sm'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Price Movement
-              </button>
-              <button 
-                onClick={() => setChartMode('volume')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                  chartMode === 'volume'
-                    ? 'bg-sky-600 border-sky-600 text-white shadow-sm'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Volume Flow
-              </button>
+        <div className="xl:col-span-2 bg-white border border-slate-200/90 rounded-2xl p-6 flex flex-col justify-between min-h-[440px] shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button 
+                  onClick={() => setChartMode('price')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    chartMode === 'price'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Price Area
+                </button>
+                <button 
+                  onClick={() => setChartMode('volume')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    chartMode === 'volume'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Volume Flow
+                </button>
+              </div>
+
+              {/* Timeframe selector */}
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+                {['1D', '1W', '1M', '3M'].map(tf => (
+                  <button 
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${
+                      timeframe === tf ? 'bg-white text-sky-700 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
             </div>
             
-            <div className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
-              <Compass size={14} className="text-sky-600" /> Real-time Simulation (3s Updates)
+            <div className="text-xs text-slate-500 flex items-center gap-1.5 font-medium self-end sm:self-auto">
+              <Compass size={14} className="text-sky-600" /> Real-time Simulation Engine
             </div>
           </div>
 
-          <div className="flex-1 min-h-[280px]">
+          <div className="flex-1 min-h-[290px]">
             {chartMode === 'price' ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={historyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={chartGradientColor} stopOpacity={0.2}/>
+                      <stop offset="5%" stopColor={chartGradientColor} stopOpacity={0.25}/>
                       <stop offset="95%" stopColor={chartGradientColor} stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
@@ -204,13 +270,13 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
                     stroke="#64748b" 
                     fontSize={10} 
                     domain={['auto', 'auto']}
-                    tickFormatter={(val) => `₹${val.toFixed(0)}`}
+                    tickFormatter={(val) => `${stock.country === 'US' ? '$' : '₹'}${val.toFixed(0)}`}
                   />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
                     labelStyle={{ color: '#64748b', fontSize: '11px' }}
                     itemStyle={{ color: '#0f172a', fontSize: '13px', fontWeight: 'bold' }}
-                    formatter={(value) => [`₹${value.toFixed(2)}`, 'Close Price']}
+                    formatter={(value) => [`${stock.country === 'US' ? '$' : '₹'}${value.toFixed(2)}`, 'Close Price']}
                   />
                   <Area 
                     type="monotone" 
@@ -240,7 +306,7 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
                     tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                   />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
                     formatter={(value) => [`${value.toLocaleString()}`, 'Shares Traded']}
                   />
                   <Bar dataKey="volume" fill="#0284c7" radius={[4, 4, 0, 0]} opacity={0.7} />
@@ -251,10 +317,10 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
         </div>
 
         {/* Right 1 Column: Explainable AI Recommendation Card */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between border-l-4 border-l-sky-600">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 flex flex-col justify-between border-l-4 border-l-sky-600 shadow-sm">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">Explainable AI Rec</span>
+              <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">Explainable AI Engine</span>
               <span className="flex items-center gap-1 text-[11px] font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-0.5 rounded-full">
                 <CheckCircle size={11} /> FinBERT + LSTM
               </span>
@@ -265,7 +331,7 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
                 {recommendation}
               </div>
               <div>
-                <span className="text-xs text-slate-500 block font-semibold">Confidence Score</span>
+                <span className="text-xs text-slate-500 block font-semibold">AI Confidence Score</span>
                 <span className="text-lg font-bold text-slate-900">{ratingScore}% Bullish</span>
               </div>
             </div>
@@ -282,28 +348,28 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-            <span className="flex items-center gap-1"><AlertCircle size={12} className="text-amber-500 shrink-0" /> Explainable AI explains *why* signals form recommendations.</span>
+            <span className="flex items-center gap-1"><AlertCircle size={12} className="text-amber-500 shrink-0" /> Explainable AI reveals underlying indicators behind signals.</span>
           </div>
         </div>
 
       </div>
 
-      {/* Grid: Indicators + News Sentiment + ESG/Holdings */}
+      {/* 3. Grid: Indicators + News Sentiment + ESG/Holdings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Col 1: Technical Indicators */}
-        <div className="glass-panel rounded-2xl p-6 space-y-5">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 space-y-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
-              <TrendingUp size={18} className="text-sky-600" /> Technical Indicators
+              <TrendingUp size={18} className="text-sky-600" /> Quantitative Technicals
             </h3>
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">Live Calc</span>
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">Live Signals</span>
           </div>
 
           {/* RSI Gauge */}
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-semibold">
-              <span className="text-slate-600">RSI (14-day Period)</span>
+              <span className="text-slate-600">RSI (14-day Index)</span>
               <span className={indicators.rsi < 30 ? 'text-emerald-600 font-bold' : indicators.rsi > 70 ? 'text-rose-600 font-bold' : 'text-slate-800 font-bold'}>
                 {indicators.rsi} ({indicators.rsi < 30 ? 'Oversold' : indicators.rsi > 70 ? 'Overbought' : 'Neutral'})
               </span>
@@ -334,7 +400,7 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
           <div className="flex items-center justify-between text-xs py-2.5 border-t border-b border-slate-100">
             <span className="text-slate-600 font-semibold">Simple Moving Avg (14 SMA)</span>
             <div className="text-right">
-              <div className="font-mono font-bold text-slate-900">₹{indicators.sma14.toLocaleString()}</div>
+              <div className="font-mono font-bold text-slate-900">{stock.country === 'US' ? '$' : '₹'}{indicators.sma14.toLocaleString()}</div>
               <div className={`text-[10px] font-bold ${stock.price >= indicators.sma14 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 Price is {stock.price >= indicators.sma14 ? 'Above (Bullish)' : 'Below (Bearish)'}
               </div>
@@ -354,19 +420,19 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
           </div>
 
           {/* Forecast Trend LSTM */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-            <span className="text-[10px] text-sky-700 font-extrabold uppercase tracking-wider block">LSTM Forecast Predictions</span>
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
+            <span className="text-[10px] text-sky-700 font-extrabold uppercase tracking-wider block">LSTM Forecast Target Price</span>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-slate-500 block text-[10px] font-medium">7-Day Forecast</span>
-                <span className="font-mono font-extrabold text-slate-900">₹{indicators.predictions.days7.toFixed(1)}</span>
+                <span className="text-slate-500 block text-[10px] font-medium">7-Day Target</span>
+                <span className="font-mono font-extrabold text-slate-900">{stock.country === 'US' ? '$' : '₹'}{indicators.predictions.days7.toFixed(1)}</span>
                 <span className={`text-[9px] font-bold ml-1 ${indicators.predictions.days7ChangePct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   ({indicators.predictions.days7ChangePct >= 0 ? '+' : ''}{indicators.predictions.days7ChangePct}%)
                 </span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[10px] font-medium">30-Day Forecast</span>
-                <span className="font-mono font-extrabold text-slate-900">₹{indicators.predictions.days30.toFixed(1)}</span>
+                <span className="text-slate-500 block text-[10px] font-medium">30-Day Target</span>
+                <span className="font-mono font-extrabold text-slate-900">{stock.country === 'US' ? '$' : '₹'}{indicators.predictions.days30.toFixed(1)}</span>
                 <span className={`text-[9px] font-bold ml-1 ${indicators.predictions.days30ChangePct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   ({indicators.predictions.days30ChangePct >= 0 ? '+' : ''}{indicators.predictions.days30ChangePct}%)
                 </span>
@@ -376,11 +442,11 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
         </div>
 
         {/* Col 2: Sentiment Analysis */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
-                <Newspaper size={18} className="text-sky-600" /> News Sentiment
+                <Newspaper size={18} className="text-sky-600" /> FinBERT News Sentiment
               </h3>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-slate-700">Avg: {avgSentiment}%</span>
@@ -392,7 +458,7 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
 
             <div className="space-y-3">
               {news.map(n => (
-                <div key={n.id} className="p-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl transition-colors space-y-1">
+                <div key={n.id} className="p-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl transition-colors space-y-1">
                   <div className="flex items-start justify-between gap-2">
                     <h4 className="text-xs font-bold text-slate-900 line-clamp-1 leading-normal">{n.title}</h4>
                     <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border shrink-0 ${
@@ -407,7 +473,7 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium">
                     <span>{n.source} • {n.time}</span>
-                    <span>AI Conf: {n.score}%</span>
+                    <span>AI Score: {n.score}%</span>
                   </div>
                 </div>
               ))}
@@ -415,15 +481,15 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
           </div>
 
           <div className="pt-3 border-t border-slate-100 mt-4 flex items-center justify-between text-[10px] text-slate-500 font-medium">
-            <span>Powered by FinBERT Sentiment Engine</span>
+            <span>FinBERT Financial Language Transformer Engine</span>
           </div>
         </div>
 
         {/* Col 3: Insider Holdings & ESG */}
-        <div className="glass-panel rounded-2xl p-6 space-y-5">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 space-y-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
-              <Users size={18} className="text-sky-600" /> Holdings & ESG Insights
+              <Users size={18} className="text-sky-600" /> Shareholding & ESG Risk
             </h3>
             <span className={`text-xs font-bold uppercase px-2.5 py-0.5 rounded-full border ${
               esg.overall >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -433,7 +499,7 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
           </div>
 
           <div className="space-y-3">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Shareholding Structure</span>
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Institutional Ownership</span>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-600 font-medium">Promoter / Founders</span>
@@ -455,7 +521,7 @@ export default function Dashboard({ stock, stocksList, onSelectStock, watchlist,
           </div>
 
           <div className="space-y-3 pt-3 border-t border-slate-100">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">ESG Factors</span>
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">ESG Risk Breakdown</span>
             <div className="space-y-2 text-[11px]">
               <div>
                 <div className="flex justify-between text-slate-600 mb-1 font-medium">
