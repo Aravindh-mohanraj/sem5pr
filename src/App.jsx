@@ -20,7 +20,8 @@ import {
   Settings,
   UserCheck,
   Activity,
-  Award
+  Award,
+  Database
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Watchlist from './components/Watchlist';
@@ -43,10 +44,54 @@ function App() {
   ]);
   const [triggeredAlerts, setTriggeredAlerts] = useState([]);
   const [stocks, setStocks] = useState(stocksList);
+  const [dbConnected, setDbConnected] = useState(false);
   const [nifty, setNifty] = useState({ price: 22450.40, change: 112.50, pct: 0.50 });
   const [nasdaq, setNasdaq] = useState({ price: 16125.10, change: -45.80, pct: -0.28 });
 
-  // Real-time stock price fluctuations simulation engine
+  // 1. Fetch live stock records from SQLite FastAPI Backend (http://127.0.0.1:8000/api/stocks)
+  useEffect(() => {
+    const fetchDbStocks = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/stocks');
+        if (response.ok) {
+          const dbData = await response.json();
+          if (Array.isArray(dbData) && dbData.length > 0) {
+            // Map DB snake_case columns to camelCase component keys
+            const mappedStocks = dbData.map(s => ({
+              id: s.id,
+              name: s.name,
+              ticker: s.ticker,
+              sector: s.sector,
+              price: s.price,
+              prevClose: s.prev_close,
+              volume: s.volume,
+              marketCap: s.market_cap,
+              esgScore: s.esg_score,
+              country: s.country,
+              popular: true,
+              aiSignal: s.ai_signal,
+              peRatio: s.pe_ratio,
+              eps: s.eps,
+              beta: s.beta,
+              divYield: s.div_yield,
+              high52w: s.high_52w,
+              low52w: s.low_52w,
+              targetPrice: s.target_price,
+              recommendationScore: s.recommendation_score
+            }));
+            setStocks(mappedStocks);
+            setDbConnected(true);
+          }
+        }
+      } catch (err) {
+        console.log('Using local dataset engine fallback');
+      }
+    };
+
+    fetchDbStocks();
+  }, []);
+
+  // 2. Real-time stock price fluctuations simulation engine
   useEffect(() => {
     const interval = setInterval(() => {
       setStocks(prevStocks => {
@@ -155,7 +200,7 @@ function App() {
             <div>
               <span className="font-display font-extrabold text-base text-slate-900 tracking-tight block leading-none">AI Stock Analyzer</span>
               <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> MARKET LIVE • REAL-TIME DATA
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> MARKET LIVE • {dbConnected ? 'SQLITE DB CONNECTED' : 'REAL-TIME SIMULATION'}
               </span>
             </div>
           </div>
@@ -251,11 +296,13 @@ function App() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto pt-2 text-center text-xs">
             <div className="p-2.5 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl">
               <span className="text-[10px] text-sky-200 uppercase font-bold tracking-wider block">AI Assets Tracked</span>
-              <span className="font-mono font-extrabold text-white text-base">8 Institutional</span>
+              <span className="font-mono font-extrabold text-white text-base">{stocks.length} Assets</span>
             </div>
             <div className="p-2.5 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl">
-              <span className="text-[10px] text-sky-200 uppercase font-bold tracking-wider block">FinBERT Accuracy</span>
-              <span className="font-mono font-extrabold text-white text-base">98.4% Confidence</span>
+              <span className="text-[10px] text-sky-200 uppercase font-bold tracking-wider block">Database Status</span>
+              <span className="font-mono font-extrabold text-white text-base flex items-center justify-center gap-1">
+                <Database size={13} /> {dbConnected ? 'SQLite Live' : 'Active'}
+              </span>
             </div>
             <div className="p-2.5 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl">
               <span className="text-[10px] text-sky-200 uppercase font-bold tracking-wider block">MPT Risk Frontier</span>
