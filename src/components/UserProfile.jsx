@@ -19,9 +19,9 @@ import {
 
 export default function UserProfile({ watchlist, alerts }) {
   const [profile, setProfile] = useState({
-    name: 'Aravindh Mohanraj',
-    email: 'aravindh.mohanraj@gmail.com',
-    tier: 'Pro Investor Tier',
+    name: 'Ajai Kumar',
+    email: 'ajai.kumar@investor.in',
+    tier: 'Pro Investor',
     joined: 'August 2024',
     strategy: 'Balanced Growth',
     goal: 'Wealth Accumulation & Tech Stock Analytics',

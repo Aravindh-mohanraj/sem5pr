@@ -179,7 +179,7 @@ INSERT INTO shareholdings VALUES (?,?,?,?,?,?)
 
 # Seed Indian User Profiles in users table
 indian_users_data = [
-    ('Aravindh Mohanraj', 'aravindh.mohanraj@gmail.com', 'Pro Investor Tier', 'August 2024', 'Balanced Growth', 'Moderate', 'Wealth Accumulation & Tech Stock Analytics', 'Passionate Indian retail investor leveraging AI-driven quantitative models and Modern Portfolio Theory to optimize risk and returns across Indian and Global equities.'),
+    ('Ajai Kumar', 'ajai.kumar@investor.in', 'Pro Investor', 'August 2024', 'Balanced Growth', 'Moderate', 'Wealth Accumulation & Tech Stock Analytics', 'Passionate Indian retail investor leveraging AI-driven quantitative models and Modern Portfolio Theory to optimize risk and returns across Indian and Global equities.'),
     ('Priya Sharma', 'priya.sharma@investor.in', 'Elite Tier', 'January 2024', 'Value & Dividend Investing', 'Conservative', 'Long-Term Retirement & Passive Dividend Income', 'Long-term equity investor focused on high-dividend Indian blue chips like TCS, Reliance, and HDFC Bank.'),
     ('Rohan Verma', 'rohan.verma@fintech.in', 'Pro Tier', 'March 2024', 'Momentum & AI Growth', 'Aggressive', 'Tech Sector Alpha Generation', 'Quantitative trader and AI enthusiast specializing in semiconductor momentum and algorithmic price breakouts.'),
     ('Ananya Iyer', 'ananya.iyer@wealth.in', 'Standard Tier', 'June 2024', 'ESG & Sustainable Growth', 'Moderate', 'Sustainable Wealth Creation', 'ESG-conscious investor evaluating corporate governance and clean energy transformations in Indian enterprise.')
