@@ -39,3 +39,16 @@
 
 /* Smooth transitions */
 * { transition-property: color, background-color, border-color, box-shadow, opacity; transition-timing-function: ease; transition-duration: 150ms; }
+
+html.dark body {
+  background: #0b1220;
+  color: #e2e8f0;
+}
+
+html.dark .glass-panel {
+  background: #111827;
+  border-color: #1f2937;
+}
+
+html.dark ::-webkit-scrollbar-track { background: #0f172a; }
+html.dark ::-webkit-scrollbar-thumb { background: #475569; }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, BookOpen, PieChart, MessageSquare, LayoutDashboard, 
   Bell, ArrowUpRight, ArrowDownRight, Grid, Settings, UserCircle,
-  Database, ChevronRight
+  Database, LogOut
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Watchlist from './components/Watchlist';
@@ -12,6 +12,9 @@ import LearningCenter from './components/LearningCenter';
 import StockShowcase from './components/StockShowcase';
 import UserProfile from './components/UserProfile';
 import SettingsPage from './components/SettingsPage';
+import LoginPage from './components/LoginPage';
+import SignupPage from './components/SignupPage';
+import { useAuth } from './context/AuthContext';
 import { stocksList } from './data/mockData';
 
 const TABS = [
@@ -26,6 +29,17 @@ const TABS = [
 ];
 
 function App() {
+  const { user, logout } = useAuth();
+  const [authPage, setAuthPage] = useState('login'); // 'login' | 'signup'
+
+  // ── Auth gate ──────────────────────────────────────────────────────────────
+  if (!user) {
+    return authPage === 'login'
+      ? <LoginPage  onSwitchToSignup={() => setAuthPage('signup')} />
+      : <SignupPage onSwitchToLogin={() => setAuthPage('login')} />;
+  }
+
+  // ── Authenticated app ──────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('showcase');
   const [selectedStockId, setSelectedStockId] = useState('TCS');
   const [watchlist, setWatchlist] = useState(['TCS', 'AAPL', 'NVDA']);
@@ -163,7 +177,7 @@ function App() {
           </div>
         </div>
 
-        {/* Right: Alerts + User */}
+        {/* Right: Alerts + User + Logout */}
         <div className="flex items-center gap-3 shrink-0">
           {triggeredAlerts.length > 0 && (
             <button onClick={() => setActiveTab('watchlist')} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-full text-[12px] font-semibold">
@@ -171,11 +185,20 @@ function App() {
             </button>
           )}
           <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 pl-3 border-l border-gray-200">
-            <div className="h-8 w-8 rounded-full bg-blue-600 text-white text-[12px] font-bold flex items-center justify-center shadow-sm">AK</div>
-            <div className="hidden sm:block">
-              <span className="text-[13px] font-semibold text-gray-900 block leading-tight">Ajai Kumar</span>
-              <span className="text-[10px] text-gray-500 font-medium">Pro Investor</span>
+            <div className="h-8 w-8 rounded-full bg-blue-600 text-white text-[12px] font-bold flex items-center justify-center shadow-sm select-none">
+              {user.name?.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() || 'U'}
             </div>
+            <div className="hidden sm:block">
+              <span className="text-[13px] font-semibold text-gray-900 block leading-tight">{user.name}</span>
+              <span className="text-[10px] text-gray-500 font-medium">{user.tier || 'Investor'}</span>
+            </div>
+          </button>
+          <button
+            onClick={logout}
+            title="Sign out"
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-all"
+          >
+            <LogOut size={16} />
           </button>
         </div>
       </header>

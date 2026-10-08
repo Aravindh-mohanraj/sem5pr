@@ -179,23 +179,26 @@ export const stocksList = [
   }
 ];
 
-// Generate 30 days of stock price history for charts
-const generateHistory = (startPrice, trend, volatility, days = 30) => {
+import { hashSeed, seededRandom } from '../utils/format';
+
+// Generate daily OHLC history for charts (deterministic per ticker)
+const generateHistory = (stockId, startPrice, trend, volatility, days = 90) => {
   const history = [];
   let currentPrice = startPrice;
   const now = new Date();
+  const rand = seededRandom(hashSeed(stockId + ':history'));
   
   for (let i = days; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(now.getDate() - i);
     const dateStr = date.toISOString().split('T')[0];
     
-    const dailyChange = (Math.random() - 0.48 + trend) * currentPrice * volatility;
+    const dailyChange = (rand() - 0.48 + trend) * currentPrice * volatility;
     const open = Number((currentPrice).toFixed(2));
     const close = Number((currentPrice + dailyChange).toFixed(2));
-    const high = Number((Math.max(open, close) + Math.random() * currentPrice * volatility * 0.5).toFixed(2));
-    const low = Number((Math.min(open, close) - Math.random() * currentPrice * volatility * 0.5).toFixed(2));
-    const volume = Math.floor(Math.random() * 1000000) + 500000;
+    const high = Number((Math.max(open, close) + rand() * currentPrice * volatility * 0.5).toFixed(2));
+    const low = Number((Math.min(open, close) - rand() * currentPrice * volatility * 0.5).toFixed(2));
+    const volume = Math.floor(rand() * 1000000) + 500000;
     
     history.push({
       date: dateStr,
@@ -210,23 +213,23 @@ const generateHistory = (startPrice, trend, volatility, days = 30) => {
   return history;
 };
 
-// Seed histories
 export const stockHistories = {
-  TCS: generateHistory(3750, 0.005, 0.012),
-  RELIANCE: generateHistory(2540, -0.002, 0.015),
-  NVDA: generateHistory(110, 0.012, 0.025),
-  INFY: generateHistory(1400, 0.002, 0.011),
-  AAPL: generateHistory(180, 0.004, 0.010),
-  MSFT: generateHistory(410, 0.006, 0.011),
-  TSLA: generateHistory(195, -0.008, 0.028),
-  HDFCBANK: generateHistory(1570, 0.003, 0.009)
+  TCS: generateHistory('TCS', 3750, 0.005, 0.012),
+  RELIANCE: generateHistory('RELIANCE', 2540, -0.002, 0.015),
+  NVDA: generateHistory('NVDA', 110, 0.012, 0.025),
+  INFY: generateHistory('INFY', 1400, 0.002, 0.011),
+  AAPL: generateHistory('AAPL', 180, 0.004, 0.010),
+  MSFT: generateHistory('MSFT', 410, 0.006, 0.011),
+  TSLA: generateHistory('TSLA', 195, -0.008, 0.028),
+  HDFCBANK: generateHistory('HDFCBANK', 1570, 0.003, 0.009)
 };
 
 // Calculate technical indicators
 export const getTechnicalIndicators = (stockId) => {
-  const history = stockHistories[stockId] || generateHistory(100, 0.001, 0.01);
+  const history = stockHistories[stockId] || generateHistory(stockId || 'GEN', 100, 0.001, 0.01);
   const prices = history.map(h => h.close);
   const latestPrice = prices[prices.length - 1];
+  const rand = seededRandom(hashSeed(String(stockId) + ':tech'));
   
   const sma14 = Number((prices.slice(-14).reduce((sum, p) => sum + p, 0) / 14).toFixed(2));
   
@@ -240,12 +243,12 @@ export const getTechnicalIndicators = (stockId) => {
   const rs = gains / (losses || 1);
   const rsi = Number((100 - (100 / (1 + rs))).toFixed(2));
   
-  const macdLine = Number((latestPrice * 0.005 * (Math.random() * 2 - 1)).toFixed(2));
+  const macdLine = Number((latestPrice * 0.005 * (rand() * 2 - 1)).toFixed(2));
   const signalLine = Number((macdLine * 0.8).toFixed(2));
   const histogram = Number((macdLine - signalLine).toFixed(2));
   
-  const forecast7Day = Number((latestPrice * (1 + (rsi < 35 ? 0.045 : rsi > 70 ? -0.03 : 0.015) + (Math.random() * 0.02 - 0.01))).toFixed(2));
-  const forecast30Day = Number((latestPrice * (1 + (rsi < 40 ? 0.09 : rsi > 65 ? -0.05 : 0.04) + (Math.random() * 0.05 - 0.02))).toFixed(2));
+  const forecast7Day = Number((latestPrice * (1 + (rsi < 35 ? 0.045 : rsi > 70 ? -0.03 : 0.015) + (rand() * 0.02 - 0.01))).toFixed(2));
+  const forecast30Day = Number((latestPrice * (1 + (rsi < 40 ? 0.09 : rsi > 65 ? -0.05 : 0.04) + (rand() * 0.05 - 0.02))).toFixed(2));
   
   return {
     price: latestPrice,
